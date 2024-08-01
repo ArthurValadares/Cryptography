@@ -16,6 +16,7 @@ STEP = 1
 
 console = Console()
 
+
 @click.group()
 def main():
     pass
