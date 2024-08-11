@@ -28,13 +28,13 @@ def main():
 @click.option("--force", is_flag=True, default=False, )
 def create(private_key: Path, public_key: Path, start: int, stop: int, step: int, force: bool) -> int:
     """
-    :param private_key: The file path where the private key will be stored.
-    :param public_key: The file path where the public key will be stored.
-    :param start: The start of the range to generate the key.
-    :param stop: The end of the range to generate the key.
-    :param step: The step value for the range.
-    :param force: If True, overwrite existing keys.
-    :return: 1 if a key already exists and force is False, otherwise 0.
+    :param private_key: O caminho do arquivo onde a chave privada será armazenada.
+    :param public_key: o caminho do arquivo onde a chave pública será armazenada.
+    :param start: o início do intervalo para gerar a chave.
+    :param stop: o final do intervalo para gerar a chave.
+    :param step: o valor da etapa para o intervalo.
+    :param force: Se for True, substitua as chaves existentes.
+    :return: 1 se uma chave já existir e force for False, caso contrário, 0.
     """
     rsa = RSA.with_random_prime_numbers(start, stop, step)
     if private_key.exists() and not force:
@@ -59,9 +59,9 @@ def create(private_key: Path, public_key: Path, start: int, stop: int, step: int
 @main.group(help="Criptografa o conteúdo usando a chave pública")
 def encrypt():
     """
-    Encrypts the content using the public key.
+    Criptografa o conteúdo usando a chave pública.
 
-    :return: None
+    :return: Nenhum
     """
     pass
 
@@ -71,11 +71,11 @@ def encrypt():
 @click.argument("PUBLIC_KEY", type=click.Path(exists=True, path_type=Path, file_okay=True, dir_okay=False))
 def text(content: str, public_key: Path):
     """
-    Encrypts a text using RSA encryption.
+    Criptografa um texto usando criptografia RSA.
 
-    :param content: The text to be encrypted.
-    :param public_key: The path to the public key file.
-    :return: The encrypted text.
+    :param content: o texto a ser criptografado.
+    :param public_key: o caminho para o arquivo de chave pública.
+    :return: o texto criptografado.
     """
     file_content = open(public_key, 'r').read()
     n = int(file_content.split(" ")[0])
@@ -92,10 +92,10 @@ def text(content: str, public_key: Path):
 @click.argument("PUBLIC_KEY", type=click.Path(exists=True, path_type=Path, file_okay=True, dir_okay=False))
 def file(input_file: Path, output: Path, public_key: Path):
     """
-    :param input_file: Path to the input file that needs to be encrypted.
-    :param output: Path to the output file where the encrypted data will be stored.
-    :param public_key: Path to the file containing the public key used for encryption.
-    :return: None
+    :param input_file: Caminho para o arquivo de entrada que precisa ser criptografado.
+    :param output: caminho para o arquivo de saída em que os dados criptografados serão armazenados.
+    :param public_key: Caminho para o arquivo que contém a chave pública usada para criptografia.
+    :return: Nenhum
     """
     source = open(input_file, 'r').read()
 
@@ -113,9 +113,9 @@ def file(input_file: Path, output: Path, public_key: Path):
 @main.group(help="Desencripta usando a chave de criptografia privada")
 def decrypt():
     """
-    Decrypts using the private encryption key.
+    Descriptografa usando a chave de criptografia privada.
 
-    :return: The decrypted data.
+    :return: os dados descriptografados.
     """
     pass
 
@@ -149,11 +149,11 @@ def text(content: str, private_key: Path):
 @click.option("--force", is_flag=True, default=False, help="Forca a sobrescrita das chaves")
 def file(input_file: Path, output: Path, private_key: Path, force: bool):
     """
-    :param input_file: Path to the input file that needs to be decrypted.
-    :param output: Path to the output file where the decrypted content will be saved.
-    :param private_key: Path to the file that contains the private key used for decryption.
-    :param force: A boolean flag that indicates whether to force overwrite the output file if it already exists.
-    :return: None
+    :param input_file: caminho para o arquivo de entrada que precisa ser descriptografado.
+    :param output: Caminho para o arquivo de saída em que o conteúdo descriptografado será salvo.
+    :param private_key: Caminho para o arquivo que contém a chave privada usada para descriptografia.
+    :param force: um sinalizador booleano que indica se o arquivo de saída deve ser substituído por força, caso ele já exista.
+    :return: Nenhum
     """
     source = open(input_file, 'r').read()
 
