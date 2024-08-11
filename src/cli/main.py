@@ -1,35 +1,41 @@
 from pathlib import Path
 
 import click
-from twisted.internet import stdio
-from twisted.internet import reactor
 
-from src.chat.chat import ChatFactory
-from src.chat.stdio import StdioInput
 from src.cryptography.rsa import RSA
-from src.daemon.service_discover import ServiceDiscovery
-from rich.console import Console
 
 START = 0
 STOP = 100
 STEP = 1
 
-console = Console()
-
 
 @click.group()
 def main():
+    """
+    Ponto de entrada da aplicação
+
+    :return: None
+    """
     pass
 
 
-@main.command()
+@main.command(help="Cria uma chave de criptografia")
 @click.argument('PRIVATE_KEY', type=click.Path(exists=False, path_type=Path, file_okay=True, dir_okay=False))
 @click.argument('PUBLIC_KEY', type=click.Path(exists=False, path_type=Path, file_okay=True, dir_okay=False))
-@click.option('--start', type=click.INT, default=START)
-@click.option('--stop', type=click.INT, default=STOP)
-@click.option('--step', type=click.INT, default=STEP)
+@click.option('--start', type=click.INT, default=START, help="Início do intervalo a partir do qual a chave vai ser gerada")
+@click.option('--stop', type=click.INT, default=STOP, help="Fim do intervalo a partir do qual a chave vai ser gerada")
+@click.option('--step', type=click.INT, default=STEP, help="Passo do intervalo")
 @click.option("--force", is_flag=True, default=False, )
 def create(private_key: Path, public_key: Path, start: int, stop: int, step: int, force: bool) -> int:
+    """
+    :param private_key: The file path where the private key will be stored.
+    :param public_key: The file path where the public key will be stored.
+    :param start: The start of the range to generate the key.
+    :param stop: The end of the range to generate the key.
+    :param step: The step value for the range.
+    :param force: If True, overwrite existing keys.
+    :return: 1 if a key already exists and force is False, otherwise 0.
+    """
     rsa = RSA.with_random_prime_numbers(start, stop, step)
     if private_key.exists() and not force:
         click.echo(f"Uma chave privada já existe em {private_key}")
@@ -50,29 +56,47 @@ def create(private_key: Path, public_key: Path, start: int, stop: int, step: int
     click.echo(f'Chave publica criada com sucesso e armazenada em: {public_key}')
 
 
-@main.group()
+@main.group(help="Criptografa o conteúdo usando a chave pública")
 def encrypt():
+    """
+    Encrypts the content using the public key.
+
+    :return: None
+    """
     pass
 
 
-@encrypt.command()
+@encrypt.command(help="Criptografa um texto")
 @click.argument("CONTENT", type=click.STRING)
 @click.argument("PUBLIC_KEY", type=click.Path(exists=True, path_type=Path, file_okay=True, dir_okay=False))
 def text(content: str, public_key: Path):
+    """
+    Encrypts a text using RSA encryption.
+
+    :param content: The text to be encrypted.
+    :param public_key: The path to the public key file.
+    :return: The encrypted text.
+    """
     file_content = open(public_key, 'r').read()
     n = int(file_content.split(" ")[0])
     key = int(file_content.split(" ")[1])
 
     ciphered = RSA.encrypt_with(n, key, content)
 
-    click.echo(f"A mensagem foi encriptada com sucesso: {ciphered}")
+    click.echo(ciphered)
 
 
-@encrypt.command()
+@encrypt.command(help="Criptografa um arquivo")
 @click.argument('INPUT_FILE', type=click.Path(path_type=Path, exists=True, file_okay=True, dir_okay=False))
 @click.argument('OUTPUT', type=click.Path(path_type=Path, file_okay=True, dir_okay=False, exists=False))
 @click.argument("PUBLIC_KEY", type=click.Path(exists=True, path_type=Path, file_okay=True, dir_okay=False))
 def file(input_file: Path, output: Path, public_key: Path):
+    """
+    :param input_file: Path to the input file that needs to be encrypted.
+    :param output: Path to the output file where the encrypted data will be stored.
+    :param public_key: Path to the file containing the public key used for encryption.
+    :return: None
+    """
     source = open(input_file, 'r').read()
 
     file_content = open(public_key, 'r').read()
@@ -86,30 +110,51 @@ def file(input_file: Path, output: Path, public_key: Path):
     click.echo(f"Arquivo encriptado com sucesso! O arquivo encriptado está em: {output}")
 
 
-@main.group()
+@main.group(help="Desencripta usando a chave de criptografia privada")
 def decrypt():
+    """
+    Decrypts using the private encryption key.
+
+    :return: The decrypted data.
+    """
     pass
 
 
-@decrypt.command()
+@decrypt.command(help="Desencipta um texto")
 @click.argument("CONTENT", type=click.STRING)
 @click.argument("PRIVATE_KEY", type=click.Path(exists=True, path_type=Path, file_okay=True, dir_okay=False))
 def text(content: str, private_key: Path):
+    """
+    Desencripta um texto.
+
+    :param content: O texto a ser desencriptado.
+    :param private_key: O caminho para o arquivo da chave privada.
+    :type content: str
+    :type private_key: Path
+    :return: None
+    """
     file_content = open(private_key, 'r').read()
     n = int(file_content.split(" ")[0])
     key = int(file_content.split(" ")[1])
 
     decrypted = RSA.decrypt_with(n, key, content)
 
-    click.echo(f"A mensagem foi desencriptada com sucesso: {decrypted}")
+    click.echo(decrypted)
 
 
-@decrypt.command()
+@decrypt.command(help="Desencripta um arquivo")
 @click.argument('INPUT_FILE', type=click.Path(path_type=Path, exists=True, file_okay=True, dir_okay=False))
 @click.argument('OUTPUT', type=click.Path(path_type=Path, file_okay=True, dir_okay=False, exists=False))
 @click.argument("PRIVATE_KEY", type=click.Path(exists=True, path_type=Path, file_okay=True, dir_okay=False))
-@click.option("--force", is_flag=True, default=False)
+@click.option("--force", is_flag=True, default=False, help="Forca a sobrescrita das chaves")
 def file(input_file: Path, output: Path, private_key: Path, force: bool):
+    """
+    :param input_file: Path to the input file that needs to be decrypted.
+    :param output: Path to the output file where the decrypted content will be saved.
+    :param private_key: Path to the file that contains the private key used for decryption.
+    :param force: A boolean flag that indicates whether to force overwrite the output file if it already exists.
+    :return: None
+    """
     source = open(input_file, 'r').read()
 
     file_content = open(private_key, 'r').read()
@@ -122,31 +167,6 @@ def file(input_file: Path, output: Path, private_key: Path, force: bool):
             f.write(cyphered)
 
     click.echo(f"Arquivo desencriptado com sucesso! O arquivo encriptado está em: {output}")
-
-
-@main.command()
-@click.option('--name', prompt='Enter your name', help='Your chat name.')
-@click.option('--port', default=12345, help='Port to listen on.')
-@click.option('--start', type=int, default=1000, help='Start range for prime numbers.')
-@click.option('--stop', type=int, default=5000, help='Stop range for prime numbers.')
-@click.option('--step', type=int, default=1, help='Step for prime numbers.')
-def start(name, port, start, stop, step):
-    rsa = RSA.with_random_prime_numbers(start, stop, step)
-    service_discovery = ServiceDiscovery('_chat._tcp.local.')
-
-    service_discovery.register_service(name, port)
-    service_discovery.start_discovery()
-
-    factory = ChatFactory(rsa)
-    reactor.listenTCP(port, factory)
-    console.print(f"Server started on port {port} with name {name}")
-    console.print(f"Public key: {rsa.public_key}, n: {rsa.n}")
-
-    stdio.StandardIO(StdioInput(factory.buildProtocol(None)))
-    reactor.run()
-
-    service_discovery.unregister_service(name)
-    service_discovery.close()
 
 
 if __name__ == '__main__':
